@@ -1,0 +1,179 @@
+##Tabela 1: Consolidado de vendas por ano e mês
+%%bigquery
+
+CREATE OR REPLACE TABLE dataset_trusted.tb_vendas_ano_mes AS
+
+--CTE para trazer a base com as informações necessárias
+WITH consulta_consolidada AS (
+SELECT
+EXTRACT (YEAR FROM  DATA_VENDA)    as ano,
+EXTRACT (MONTH FROM DATA_VENDA)    as mes,
+SUM(QTD_VENDA)                     as qtd_vendas
+
+FROM dataset_vendas.rw_vendas_consolidada
+
+GROUP BY
+
+1,2
+),
+--CTE para formatar os dados e garantir padronização
+formato_dados_consulta_consolidada AS (
+SELECT
+CAST (ano AS STRING)    as ano,
+CAST(mes AS STRING)     as mes,
+CAST(qtd_vendas AS INT64) as qtd_vendas
+
+FROM consulta_consolidada
+
+)
+--Consulta final que retorna todos os campos definidos na primeira CTE e regra para adicionar '0' no campo de mês
+SELECT
+ano,
+LPAD (mes, 2, '0') as mes,
+qtd_vendas
+
+FROM formato_dados_consulta_consolidada
+
+;
+
+
+##Tabela 2: Consolidado de Vendas por Marca e Linha
+
+%%bigquery
+CREATE OR REPLACE TABLE dataset_trusted.tb_vendas_marca_linha AS
+
+--CTE para trazer a base com as informações necessárias
+WITH consulta_vendas_marca AS (
+SELECT
+ID_MARCA                           as id_marca,
+ID_LINHA                           as id_linha,
+SUM(QTD_VENDA)                     as qtd_vendas
+
+FROM dataset_vendas.rw_vendas_consolidada
+
+GROUP BY
+
+1,2
+)
+--Consulta final para padronizar formato dos dados das colunas
+SELECT
+CAST(id_marca AS INT64)   as id_marca,
+CAST(id_linha AS STRING)  as id_linha,
+CAST(qtd_vendas AS INT64) as qtd_vendas
+
+FROM consulta_vendas_marca
+
+;
+
+##Tabela 3: Consolidado de vendas por marca, mês e ano
+%%bigquery
+
+CREATE OR REPLACE TABLE dataset_trusted.tb_vendas_marca_ano_mes AS
+
+--CTE para trazer a base com as informações necessárias
+WITH consulta_consolidada AS (
+SELECT
+ID_MARCA                           as id_marca,
+EXTRACT (YEAR FROM  DATA_VENDA)    as ano,
+EXTRACT (MONTH FROM DATA_VENDA)    as mes,
+SUM(QTD_VENDA)                     as qtd_vendas
+
+FROM dataset_vendas.rw_vendas_consolidada
+
+GROUP BY
+
+1,2
+),
+--CTE para formatar os dados e garantir padronização
+formato_dados_consulta_consolidada AS (
+SELECT
+CAST(id_marca AS INT64)   as id_marca,
+CAST (ano AS STRING)      as ano,
+CAST(mes AS STRING)       as mes,
+CAST(qtd_vendas AS INT64) as qtd_vendas
+
+FROM consulta_consolidada
+
+)
+--Consulta final que retorna todos os campos definidos na primeira CTE e regra para adicionar '0' no campo de mês
+SELECT
+id_marca,
+ano,
+LPAD (mes, 2, '0') as mes,
+qtd_vendas
+
+FROM formato_dados_consulta_consolidada
+
+;
+##Tabela 4: Consolidado de vendas por linha, ano e mês
+
+%%bigquery
+CREATE OR REPLACE TABLE dataset_trusted.tb_vendas_linha_ano_mes AS
+
+--CTE para trazer a base com as informações necessárias
+WITH consulta_linha_consolidada AS (
+SELECT
+ID_LINHA                           as id_linha,
+EXTRACT (YEAR FROM  DATA_VENDA)    as ano,
+EXTRACT (MONTH FROM DATA_VENDA)    as mes,
+SUM(QTD_VENDA)                     as qtd_vendas
+
+FROM dataset_vendas.rw_vendas_consolidada
+
+GROUP BY
+
+1,2,3
+),
+
+--CTE para formatar os dados e garantir padronização
+formato_dados_consulta_linha_consolidada AS (
+SELECT
+CAST(id_linha AS INT64)   as id_linha,
+CAST (ano AS STRING)      as ano,
+CAST(mes AS STRING)       as mes,
+CAST(qtd_vendas AS INT64) as qtd_vendas
+
+FROM consulta_linha_consolidada
+
+)
+--Consulta final que retorna todos os campos definidos na primeira CTE e regra para adicionar '0' no campo de mês
+SELECT
+id_linha,
+ano,
+LPAD (mes, 2, '0') as mes,
+qtd_vendas
+
+FROM formato_dados_consulta_linha_consolidada
+
+##Tabela 5: Dimensão de Marca e Linha
+
+%%bigquery
+CREATE OR REPLACE TABLE dataset_trusted.dim_marca_linha AS
+
+--CTE para trazer a base com as informações necessárias
+WITH consulta_marca_linha AS (
+SELECT
+DISTINCT
+ID_MARCA                           as id_marca,
+MARCA                              as dsc_marca,
+ID_LINHA                           as id_linha,
+LINHA                              as dsc_linha
+
+FROM dataset_vendas.rw_vendas_consolidada
+
+),
+
+--CTE para padronizar os formatos de dados
+formato_dados_marca_linha  AS (
+
+SELECT
+CAST (id_marca  AS INTEGER) as id_marca,
+CAST (dsc_marca AS STRING)  as dsc_marca,
+CAST (id_linha  AS INTEGER) as id_linha,
+CAST (dsc_linha AS STRING)  as dsc_linha
+
+FROM consulta_marca_linha
+
+)
+--Consulta final com a tabela formata e os campos devidamente selecionados
+SELECT * FROM formato_dados_marca_linha

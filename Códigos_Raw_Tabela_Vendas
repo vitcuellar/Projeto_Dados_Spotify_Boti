@@ -1,0 +1,92 @@
+# Ao rodar esse código serão importadas as bibliotecas auxiliares escolhidas
+
+import pandas as pd
+from google.cloud import bigquery
+from datetime import datetime, timedelta
+
+## Conversão das tabelas em DF para transformação
+
+#Criar a variável client para inicializar o BigQuery
+
+client = bigquery.Client()
+
+#Definir IDs de projeto e conjunto de dados
+
+project_id = 'case-2-boticario'
+dataset_id = 'dataset_vendas'
+
+#Lista de tabelas que serão utilizadas
+lista_tabelas = ['tb_vendas_2017', 'tb_vendas_2018', 'tb_vendas_2019']
+
+#Iteração sobre as tabelas especificadas
+
+for tabelas in lista_tabelas:
+  #Consultar tabela no BigQuery e salvar em uma variável
+  query = f"SELECT * FROM `{project_id}.{dataset_id}.{tabelas}`"
+
+  #Converter em DataFrame usando pandas
+  df_tabelas = client.query(query).to_dataframe()
+
+
+#print(df_tabelas) #Visualização do dataframe
+
+##Remoção de duplicatas e união do DataFrame
+#Remoção de duplicatas
+
+df_tabelas = df_tabelas.drop_duplicates()
+
+#Adição do Dataframe a uma lista
+
+lista_df_tabelas = []
+lista_df_tabelas.append (df_tabelas)
+
+#Concatena os dataframes em um único
+
+df_final = pd.concat(lista_df_tabelas)
+
+
+
+#print(df_final) #visualização do dataframe
+
+##Conversão e padronização dos formatos de dados
+
+#Conversão da coluna DATA_VENDA em formato de data
+
+df_final ['DATA_VENDA'] = df_final ['DATA_VENDA'].astype('int64') #Converter em int64
+
+df_final ['DATA_VENDA'] = pd.to_datetime(df_final['DATA_VENDA'],origin='1899-12-30',unit='D') #conversão no fomato datetime
+
+print(df_final)
+
+#Outras manipulações para garantir formato de dados unificado antes de salvar a tabela
+
+#Conversão das colunas em int
+colunas_int = ['ID_MARCA','ID_LINHA','QTD_VENDA']
+
+df_final [colunas_int] = df_final [colunas_int].astype('int')
+
+#Conversão das colunas em string
+
+colunas_str = ['MARCA','LINHA']
+
+df_final [colunas_str] = df_final [colunas_str].astype('string')
+
+#Visualizar os formatos de dados para cada campo
+print(df_final.dtypes)
+
+##Salvar DF como tabela no dataset_vendas
+
+#Definir IDs de projeto e conjunto de dados
+
+project_id = 'case-2-boticario'
+dataset_id = 'dataset_vendas'
+
+#Nomear tabela a ser salva
+
+table_id = 'rw_vendas_consolidada'
+
+#Salvar DataFrame no BQ
+
+df_final.to_gbq(destination_table = f'{project_id}.{dataset_id}.{tabelas}')
+
+print ('Tabela salva com sucesso')

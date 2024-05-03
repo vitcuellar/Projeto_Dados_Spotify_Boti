@@ -1,0 +1,212 @@
+import pandas as pd
+import requests
+import pprint
+
+#Credenciais obtidas pelo app criado em 'https://developer.spotify.com/'
+client_id = 'ee581436178847c3ac21bcdd3da71d43'
+client_secret = '5cbc3304a8c9464c9f659e77bbe9e396'
+
+#Sugestão de melhoria: salvar credenciais como variáveis de ambiente
+
+
+##Conversão da Autenticação para Base64
+
+#Biblioteca de apoio
+import base64
+
+#Definir a string conforme documentação > 'cliente_id : client_secret'
+string = client_id + ':' + client_secret
+
+#Converter o valor string em bytes
+string_bytes = string.encode('ascii')
+
+#Tranformar na base64 que é necessária na etapa de authorization
+base64_bytes = base64.b64encode(string_bytes)
+
+#Decodificar de bytes para string
+base64_string = base64_bytes.decode('ascii')
+
+##Requisição POST para obter token de acesso
+
+#Seguindo a documentação, aqui é necessário declarar a URL
+url = 'https://accounts.spotify.com/api/token'
+
+#Definição dos cabeçalhos a partir dos parâmetros de authorization e content-type
+headers = {'Authorization' : f'Basic {base64_string}',
+          'Content-Type': 'application/x-www-form-urlencoded'}
+
+#Envio da solicitação para o endpoint
+payload = { 'grant_type' : 'client_credentials'}
+
+#Request usando POST
+response = requests.request('POST', url = url, headers = headers, data=payload)
+
+#Extrair o token de acesso
+response.json()
+
+#Salvar token em uma variável
+token_acesso = response.json()['access_token']
+
+
+
+##Requisição GET de dados de Podcast
+
+#Definir parâmetros de busca pelo podcast
+def search_podcasts (query, limit=50):
+    url = "https://api.spotify.com/v1/search"
+    params = {"q" : query,"type" :"Data Hackers", "limit":limit}
+    headers = {'Authorization': f'Bearer {token_acesso}'}
+
+#Request o token e visualização do JSON
+    response = requests.request('GET', url = url, params = params, headers = headers)
+data = response.json()
+print(data)
+
+##Disponibilizar dados da API em uma Tabela Raw
+Tabela 5: Nome do Podcast, descrição, identificador do programa e total de episódios.
+
+#Extração dos dados e colunas relevantes
+if 'shows' in data:
+  shows = data['shows']['items']
+  podcasts_info = [{'Name' : show ['name'],
+                  'Description' : show ['description'],
+                  'ID' : show ['id'],
+                  'Total Episodes' : show ['total_episodes']}]
+
+#Conversão em DataFrame
+df=pd.DataFrame(podcasts_info)
+
+
+#Definir IDs de projeto e conjunto de dados
+
+project_id = 'case-2-boticario'
+dataset_id = 'dataset_rw_spotify'
+
+#Nomear tabela a ser salva
+
+table_id = 'rw_api_spotify_data_hacker'
+
+#Salvar DataFrame no BQ
+
+df.to_gbq(destination_table = f'{project_id}.{dataset_id}.{table_id}')
+
+print ('Tabela salva com sucesso')
+
+####Tabela 6: Dados de todos os episódios
+
+#Instalar biblioteca auxiliar do spotify
+pip install spotipy
+#Recursos para autenticação
+client_id = 'ee581436178847c3ac21bcdd3da71d43'
+client_secret = '5cbc3304a8c9464c9f659e77bbe9e396'
+
+#Realizar autenticação
+client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+#Obter os dados dos episódios dos podcast "Data Hacker"
+podcast_id = '1oMIHOXsrLFENAeM743g93'
+episodes = sp.show_episodes(podcast_id, limit=50)
+
+#Extração das colunas e dados dos episodios
+data_episode = []
+for episode in episodes ['items']:
+    episode_id = episode ['id']
+    name = episode ['name']
+    description = episode ['description']
+    release_date = episode ['release_date']
+    duration_ms = episode ['duration_ms']
+    language = episode ['language']
+    explicit = episode ['explicit']
+    type = episode ['type']
+    data_episode.append({'id':episode_id, 'name':name, 'description' :description, 'release_date':release_date,'language':language, 'explicit':explicit, 'type':type})
+
+df=pd.DataFrame(data_episode)
+
+
+#Definir IDs de projeto e conjunto de dados
+
+project_id = 'case-2-boticario'
+dataset_id = 'dataset_rw_spotify'
+
+#Nomear tabela a ser salva
+
+table_id = 'rw_api_spotify_data_hacker_episodes'
+
+#Salvar DataFrame no BQ
+
+df.to_gbq(destination_table = f'{project_id}.{dataset_id}.{table_id}')
+
+print ('Tabela salva com sucesso')
+####Tabela 7: Dados de episódios com a participação do Grupo Boticário
+
+#Recursos para autenticação
+client_id = 'ee581436178847c3ac21bcdd3da71d43'
+client_secret = '5cbc3304a8c9464c9f659e77bbe9e396'
+
+#Realizar autenticação
+auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+sp = spotipy.Spotify(auth_manager=auth_manager)
+
+#Obter os dados dos episódios dos podcast "Data Hacker"
+podcast_id = '1oMIHOXsrLFENAeM743g93'
+episodes = sp.show_episodes(podcast_id, limit=50)
+
+#Pesquisa participação do grupo boticario
+query = 'grupo boticário' #ter atenção com acento
+boti_episodes =[]
+for episode in episodes ['items']:
+   if query.lower() in episode ['description'].lower():
+    boti_episodes.append(episode)
+
+#Definir campos em listas para armazenar os dados
+
+idp =[]
+nam =[]
+dsc =[]
+rdt =[]
+dms=[]
+lgg =[]
+exp =[]
+typ =[]
+
+#Extração das colunas e dados dos episodios
+for episode in boti_episodes:
+    idp.append(episode ['id'])
+    nam.append(episode ['name'])
+    dsc.append(episode ['description'])
+    rdt.append(episode ['release_date'])
+    dms.append(episode ['duration_ms'])
+    lgg.append(episode ['language'])
+    exp.append(episode ['explicit'])
+    typ.append(episode ['type'])
+
+#Criando um dataframe com os dados acima
+df_boticario_episodes= pd.DataFrame({
+                      'id':idp,
+                      'name':nam,
+                      'description' :dsc,
+                      'release_date':rdt,
+                      'duration_ms' :dms,
+                      'language':lgg,
+                      'explicit':exp,
+                      'type':typ})
+
+#Visualizar o DF
+#print(df_boticario_episodes)
+
+
+#Definir IDs de projeto e conjunto de dados
+
+project_id = 'case-2-boticario'
+dataset_id = 'dataset_rw_spotify'
+
+#Nomear tabela a ser salva
+
+table_id = 'rw_api_spotify_data_hacker_episodes_boticario'
+
+#Salvar DataFrame no BQ
+
+df_boticario_episodes.to_gbq(destination_table = f'{project_id}.{dataset_id}.{table_id}')
+
+print ('Tabela salva com sucesso')
