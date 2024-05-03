@@ -1,0 +1,20 @@
+*Projeto_Boti*
+Case 2 para processo da Boticário - Parte II
+
+Para essa etapa, precisei seguir os passos para criação do "app" do Spotify Developer para obter minhas credenciais de acesso
+
+(a) Com as credenciais de acesso, apliquei o request POST para obter um token de 1h de duração
+
+(b) Defini variável para salvar o token de acesso 
+
+(c) Iniciei outra requisição, do tipo GET, para obter os dados de um JSON que retornasse podcasts
+
+(d) Para a primeira tabela, fiz um comando de procurar por um palavra-chave "data hacker"
+
+(e) Posteriormente, defini os campos que queria extrair para meu dataframe (iguais aos pedidos no comando do case)
+    e salvei a tabela na camada "raw" do Spotify
+
+(f)Para a tabela 6, segui a mesma lógica de busca, mas agora já tendo obtido o ID do podcast "Data Hacker", defini um dataframe de 50 linhas
+    #que trouxe vários campos (iguais aos pedidos no comando do case) 
+
+ (g) Por fim, para a última tabela, filtrei como palavra chave "grupo boticário" e salvei em uma nova tabela ainda no cojunto de raw   
